@@ -1,69 +1,19 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Icon } from "@/components/icon";
+import { JobCard, CompanyLogo } from "@/components/job-card";
+import { SearchForm } from "@/components/search-form";
+import { jobs, categories } from "@/lib/jobs";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  return <main id="main">
+    <section className="shell relative grid gap-8 pb-14 pt-12 lg:grid-cols-[1.2fr_1fr] lg:gap-6 lg:pb-20 lg:pt-20">
+      <div className="rise relative z-10"><span className="inline-flex items-center gap-2 rounded-full border border-[#dce6c8] bg-[#f0f5e7] px-3 py-1.5 text-[11px] font-medium"><span className="size-1.5 rounded-full bg-[#6d9539]" />НОВЫЙ ШАГ В ТВОЕЙ КАРЬЕРЕ</span><h1 className="mt-6 max-w-2xl text-[44px] leading-[1.08] font-semibold tracking-[-2px] sm:text-[62px] lg:text-[68px]">Работа, которая<br />подходит <span className="relative inline-block text-[#759444]">тебе.<svg aria-hidden="true" viewBox="0 0 220 12" className="absolute -bottom-2 left-0 w-full fill-none stroke-lime stroke-[5]"><path d="M2 8Q110-1 217 6" /></svg></span></h1><p className="mt-7 max-w-md text-base leading-7 text-muted">Найди своё место в команде, где ценят твои идеи.<br className="hidden sm:block" /> От первой стажировки до следующей большой цели.</p><div className="mt-8 lg:mr-[-100px]"><SearchForm /></div><div className="mt-4 flex flex-wrap items-center gap-2 text-xs"><span className="mr-1 text-muted">Популярное:</span>{["Дизайн", "React", "Маркетинг"].map(q => <Link href={`/jobs?q=${encodeURIComponent(q)}`} key={q} className="rounded-full border border-line px-3 py-1.5 hover:bg-lime/40">{q}</Link>)}<Link href="/jobs?format=Удалённо" className="rounded-full border border-line px-3 py-1.5 hover:bg-lime/40">Удалённо ↗</Link></div><div className="mt-8 flex items-center gap-3 text-xs text-muted"><span className="flex size-7 items-center justify-center rounded-full bg-[#edf2e5]"><Icon name="check" className="size-4 text-ink" /></span>Твой опыт. Твои условия. Твои возможности.</div></div>
+      <div aria-hidden="true" className="hero-grid relative mx-auto hidden h-[445px] w-full max-w-[490px] overflow-hidden rounded-[32px] bg-[#edf2e3] lg:block"><div className="absolute -right-16 top-12 size-80 rounded-full border-[45px] border-[#dce8c8]" /><div className="absolute right-9 top-8 flex size-14 rotate-12 items-center justify-center rounded-2xl bg-lime text-ink shadow-sm"><Icon name="diagonal" className="size-8" /></div><div className="absolute left-8 top-16 -rotate-6 rounded-xl border border-white/70 bg-white/80 px-4 py-3 text-xs shadow-sm"><span className="mr-2">✦</span> Твой следующий уровень</div><div className="absolute left-16 right-9 top-36 rotate-[-4deg] rounded-2xl bg-white p-6 shadow-[0_20px_50px_#243b2220]"><div className="flex items-center justify-between"><CompanyLogo job={jobs[0]} /><span className="rounded-full bg-[#eef5e4] px-3 py-1 text-[10px] text-[#63853b]">IT & Дизайн</span></div><p className="mt-5 text-2xl font-semibold">Твоя новая работа</p><p className="mt-2 text-sm text-muted">Большие идеи начинаются с тебя</p><div className="mt-5 flex gap-2 text-[10px]"><span className="rounded bg-[#f2f4ee] px-2 py-1">Гибкий график</span><span className="rounded bg-[#f2f4ee] px-2 py-1">Классная команда</span></div><div className="mt-5 flex items-center justify-between border-t border-line pt-4"><span className="text-xs font-semibold">Место для твоего роста</span><span className="flex size-8 items-center justify-center rounded-lg bg-ink text-white"><Icon name="arrow" className="size-4" /></span></div></div><div className="absolute bottom-5 left-6 flex rotate-3 items-center gap-3 rounded-xl bg-ink px-5 py-4 text-white shadow-lg"><span className="flex size-9 items-center justify-center rounded-full bg-lime text-ink"><Icon name="check" /></span><div><p className="text-sm font-medium">Всё начинается с отклика</p><p className="mt-1 text-[10px] text-white/60">Сделай первый шаг сегодня</p></div></div></div>
+    </section>
+    <section className="border-y border-line bg-white/60"><div className="shell flex flex-col items-center justify-between gap-6 py-7 md:flex-row"><p className="max-w-36 text-xs leading-5 text-muted">Знакомься с командами<br />в нашем демокаталоге</p><div className="flex flex-1 flex-wrap items-center justify-around gap-x-8 gap-y-4 text-xl font-semibold tracking-tight text-[#6e7c70] sm:text-2xl"><span>л✦ линия</span><span className="font-serif">◎ орбита</span><span>≋ поток</span><span className="font-mono">спектр_</span><span>↗ маяк</span></div></div></section>
+    <section className="shell py-16"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow text-[#829267]">НАЙДИ СВОЁ НАПРАВЛЕНИЕ</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Разные таланты. Общие возможности.</h2></div><Link href="/jobs" className="flex items-center gap-2 text-sm font-semibold">Все направления <Icon name="arrow" /></Link></div><div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-5">{categories.map((category, i) => <Link href={`/jobs?category=${encodeURIComponent(category)}`} key={category} className="group rounded-xl border border-line bg-white p-5 transition-colors hover:border-[#bed08e] hover:bg-[#f0f5e7]"><span className="flex size-10 items-center justify-center rounded-xl bg-[#f1f4eb] group-hover:bg-lime"><Icon name={["code", "design", "globe", "chart", "people"][i]} /></span><h3 className="mt-5 text-sm font-semibold">{category}</h3><div className="mt-2 flex items-center justify-between text-xs text-muted"><span>Вакансий: {jobs.filter(j => j.category === category).length}</span><Icon name="diagonal" className="size-4" /></div></Link>)}</div></section>
+    <section className="shell pb-16"><div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow text-[#829267]">ВОЗМОЖНО, ТВОЙ СЛЕДУЮЩИЙ ШАГ</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Вакансии, на которые стоит взглянуть</h2></div><Link href="/jobs" className="flex items-center gap-2 text-sm font-semibold">Все вакансии <Icon name="arrow" /></Link></div><div className="mt-8 grid gap-4 md:grid-cols-3">{jobs.slice(0, 3).map(job => <JobCard job={job} key={job.id} compact />)}</div></section>
+    <section id="how-it-works" className="shell scroll-mt-8 pb-16"><div className="rounded-3xl bg-[#edf2e5] px-6 py-10 sm:px-10"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow text-[#76845e]">ПРОЩЕ, ЧЕМ КАЖЕТСЯ</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Новый этап — в трёх шагах</h2></div><span className="text-5xl text-[#a8bc7d]" aria-hidden="true">↗</span></div><div className="mt-9 grid gap-8 md:grid-cols-3">{[["01", "Найди своё", "Выбери направление и настрой фильтры под свой опыт и ритм жизни."], ["02", "Узнай команду", "Изучи задачи, условия и навыки, которые пригодятся на новом месте."], ["03", "Сделай первый шаг", "Открой форму отклика и расскажи, почему эта работа тебе интересна."]].map(([n, title, text]) => <div key={n}><span className="font-mono text-sm text-[#7d8a69]">{n} /</span><h3 className="mt-3 text-lg font-semibold">{title}</h3><p className="mt-2 max-w-xs text-sm leading-6 text-muted">{text}</p></div>)}</div></div></section>
+    <section className="shell pb-16"><div className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-ink p-8 text-white sm:flex-row sm:items-center sm:p-10"><div><h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Большие перемены начинаются здесь.</h2><p className="mt-3 text-sm text-white/65">Найди работу, ради которой хочется открыть ноутбук.</p></div><Link href="/jobs" className="btn shrink-0 bg-lime text-ink hover:bg-[#e1f7a1]">Смотреть вакансии <Icon name="arrow" /></Link></div></section>
+  </main>;
 }

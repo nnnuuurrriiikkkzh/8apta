@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function NotFound() { return <main id="main" className="shell py-28 text-center"><p className="eyebrow text-muted">404 · СТРАНИЦА НЕ НАЙДЕНА</p><h1 className="mt-5 text-4xl font-semibold tracking-tight">Эта возможность куда-то исчезла</h1><p className="mt-4 text-muted">Но в каталоге есть другие вакансии. Давай посмотрим?</p><Link href="/jobs" className="btn btn-primary mt-8">Перейти к вакансиям →</Link></main>; }
