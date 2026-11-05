@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon } from "@/components/icon";
+import { useDemoSession } from "./demo-session";
 
 type Mode = "login" | "register" | "forgot";
 type FieldName = "name" | "email" | "password" | "confirmation";
@@ -16,6 +18,8 @@ const content = {
 };
 
 export function AuthForm({ mode }: { mode: Mode }) {
+  const router = useRouter();
+  const { signIn, registerRole } = useDemoSession();
   const [values, setValues] = useState<Values>({ name: "", email: "", password: "", confirmation: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [role, setRole] = useState("seeker");
@@ -52,6 +56,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
       return;
     }
     setStatus("loading");
+    if (mode === "login" || mode === "register") {
+      if (mode === "register") registerRole(role === "employer" ? "employer" : "seeker");
+      else signIn();
+      setValues(current => ({ ...current, password: "", confirmation: "" }));
+      router.replace("/");
+      return;
+    }
     // Только локальная демонстрация ожидания. Никаких сетевых запросов или хранения пароля.
     timer.current = setTimeout(() => {
       setSubmittedEmail(values.email.trim());
@@ -85,21 +96,21 @@ export function AuthForm({ mode }: { mode: Mode }) {
     </div>;
   }
 
-  if (status === "success") {
+  if (status === "success" && mode !== "login") {
     return <div className="py-6 sm:py-10">
       <span className="flex size-14 items-center justify-center rounded-2xl bg-lime"><Icon name="check" className="size-7" /></span>
       <p className="eyebrow mt-7 text-muted">ДЕМОНСТРАЦИЯ ЗАВЕРШЕНА</p>
       <h1 ref={successHeading} tabIndex={-1} className="mt-3 text-3xl font-semibold tracking-tight outline-none">
-        {mode === "login" ? "Форма входа проверена" : mode === "register" ? "Всё готово к знакомству" : "Запрос на восстановление готов"}
+        {mode === "register" ? "Всё готово к знакомству" : "Запрос на восстановление готов"}
       </h1>
       <p className="mt-4 break-words text-sm leading-7 text-muted">
-        {mode === "login" && "В реальном сервисе здесь начнётся работа с аккаунтом. Сейчас можно продолжить знакомство с вакансиями."}
         {mode === "register" && <>Форма для роли «{role === "seeker" ? "Соискатель" : "Работодатель"}» заполнена. После подключения сервера на <strong className="text-ink">{submittedEmail}</strong> будет отправляться письмо для подтверждения.</>}
         {mode === "forgot" && <>После подключения сервера на <strong className="text-ink">{submittedEmail}</strong> будет отправляться ссылка для сброса пароля, если аккаунт существует.</>}
       </p>
       <p className="mt-5 rounded-xl bg-[#f0f4e8] p-4 text-xs leading-6 text-[#5d6f48]">Это UI-демонстрация. Аккаунт и сессия не создаются, пароли не сохраняются, письма не отправляются.</p>
-      <Link href={mode === "login" ? "/jobs" : "/login"} className="btn btn-primary mt-7 w-full">
-        {mode === "login" ? "Смотреть вакансии" : "Перейти ко входу"}<Icon name="arrow" className="size-4" />
+      <Link href={mode === "forgot" ? "/reset-password" : "/verify-email"} className="btn btn-light mt-6 w-full">{mode === "forgot" ? "Показать смену пароля" : "Показать подтверждение email"}</Link>
+      <Link href="/login" className="btn btn-primary mt-7 w-full">
+        Перейти ко входу<Icon name="arrow" className="size-4" />
       </Link>
       <button type="button" onClick={() => { setStatus("idle"); setErrors({}); }} className="mt-4 w-full rounded-lg py-2 text-sm text-muted underline underline-offset-4">
         {mode === "forgot" ? "Указать другой email" : "Вернуться к форме"}

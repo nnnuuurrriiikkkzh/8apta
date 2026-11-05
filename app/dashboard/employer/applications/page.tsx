@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { EmployerApplications } from "@/components/employer-applications";
-
-export const metadata: Metadata = { title: "Заявки кандидатов — кабинет работодателя" };
-
-export default function ApplicationsPage() {
-  return <main id="main"><EmployerApplications /></main>;
-}
+import { Suspense } from "react";
+import { Applications } from "@/components/platform/applications";
+export const metadata: Metadata = { title: "Отклики кандидатов" };
+export default function Page() { return <Suspense fallback={<p role="status" className="p-8">Загрузка…</p>}><Applications employer /></Suspense>; }
