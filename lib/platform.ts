@@ -1,6 +1,7 @@
 import { jobs, categories, type Job } from "./jobs";
 import { applications, type Application } from "./applications";
 import type { Resume } from "./seeker";
+import { addSeekerDemo } from "./seeker-demo";
 
 export const jobStatuses = { Draft: "Черновик", Pending: "На проверке", Published: "Опубликована", Rejected: "Отклонена", Closed: "Закрыта", Archived: "В архиве" } as const;
 export type JobStatus = keyof typeof jobStatuses;
@@ -13,7 +14,7 @@ export const roleHomes: Record<Role, string> = { seeker: "/dashboard/seeker", em
 export type Report = { id: string; target: string; targetId: string; type: "job" | "company"; reason: string; description: string; status: "Open" | "InReview" | "Resolved" | "Rejected"; decision: string; escalated: boolean; date: string };
 export const reportStatuses = { Open: "Новая", InReview: "В работе", Resolved: "Решена", Rejected: "Отклонена" };
 export type Platform = {
-  version: 1; jobs: Vacancy[]; companies: Company[]; applications: Response[];
+  version: 1; seekerDemoVersion?: 1; jobs: Vacancy[]; companies: Company[]; applications: Response[];
   messages: { id: string; applicationId: string; author: "seeker" | "employer"; text: string; date: string; read: boolean }[];
   notifications: { id: string; role: Role; title: string; text: string; href: string; date: string; read: boolean }[];
   reports: Report[]; history: { id: string; action: string; date: string; actor: string }[];
@@ -25,17 +26,17 @@ export type Platform = {
   searches: { id: string; name: string; query: string }[];
 };
 
-export const initialPlatform: Platform = {
+export const initialPlatform: Platform = addSeekerDemo({
   version: 1,
   jobs: jobs.map(job => ({ ...job, status: "Published", publishedAt: `2026-10-${String(Number.parseInt(job.date)).padStart(2, "0")}T10:00:00.000Z`, reason: "", conditions: "Гибкий график, обучение и поддержка команды." })),
   companies: ["Линия", "Орбита", "Поток", "Спектр", "Маяк"].map((name, i) => ({ id: ["liniya", "orbita", "potok", "spektr", "mayak"][i], name, city: i % 2 ? "Астана" : "Алматы", industry: ["Финтех и дизайн", "IT и разработка", "Маркетинг", "Данные и аналитика", "Продуктовые команды"][i], size: i % 2 ? "51–200 сотрудников" : "11–50 сотрудников", website: "https://example.com", description: `${name} — команда, которая создаёт полезные цифровые продукты. Мы ценим самостоятельность, открытый диалог и желание учиться. Присоединяйся, чтобы работать над задачами, результат которых видят люди.`, email: "team@example.com", logo: "", verified: true, blocked: false })),
   applications,
   messages: [{ id: "msg-demo", applicationId: "demo-3", author: "employer", text: "Мария, здравствуйте! Приглашаем вас обсудить вакансию. Когда вам будет удобно?", date: "2026-10-28T10:30:00.000Z", read: false }],
-  notifications: [{ id: "welcome", role: "seeker", title: "Твой следующий шаг", text: "Заполни резюме и отправь первый отклик.", href: "/dashboard/seeker/resumes", date: "2026-11-05T08:00:00.000Z", read: false }],
+  notifications: [{ id: "welcome", role: "seeker", title: "Добро пожаловать в демокабинет", text: "Здесь уже есть вымышленные резюме, отклики и переписки. Открой любой раздел и попробуй изменить данные.", href: "/dashboard/seeker", date: "2026-11-05T06:00:00.000Z", read: true }],
   reports: [], history: [], searches: [],
   users: [{ id: "me", name: "Александр Ким", email: "alex.demo@example.com", role: "seeker", blocked: false }, { id: "hr", name: "Елена Соколова", email: "hr@example.com", role: "employer", blocked: false }, { id: "mod", name: "Олег Иванов", email: "moderator@example.com", role: "moderator", blocked: false }, { id: "admin", name: "Анна Пак", email: "admin@example.com", role: "admin", blocked: false }],
   categories, preferences: { email: true, messages: true, applications: true, profileVisible: false }, settings: { name: "JobHub", support: "support@example.com", moderation: true, registration: true }, subscription: "Free",
-};
+});
 
 export function audit(data: Platform, action: string, actor = "Демонстрация") {
   data.history.unshift({ id: crypto.randomUUID(), action, actor, date: new Date().toISOString() });

@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useSyncExternalStore } from "react";
 import { initialPlatform, type Platform } from "@/lib/platform";
+import { addSeekerDemo } from "@/lib/seeker-demo";
 
 const key = "jobhub-platform-v1";
 const seed = JSON.stringify(initialPlatform);
@@ -20,7 +21,7 @@ function parse(raw: string): Platform {
   try {
     const value = JSON.parse(raw);
     if (value?.version !== 1 || !["jobs", "companies", "applications", "messages", "notifications", "reports", "history", "users", "categories"].every(k => Array.isArray(value[k])) || !value.preferences || !value.settings) return initialPlatform;
-    return { ...value, searches: Array.isArray(value.searches) ? value.searches : [] };
+    return addSeekerDemo({ ...value, searches: Array.isArray(value.searches) ? value.searches : [] });
   } catch { return initialPlatform; }
 }
 export function usePlatform() {

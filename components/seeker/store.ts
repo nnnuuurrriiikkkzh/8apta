@@ -18,6 +18,9 @@ function parse(raw: string): SeekerData {
     if (value?.version !== 1 || !value.profile || !Array.isArray(value.resumes)) return initialSeekerData;
     if (!Object.keys(initialSeekerData.profile).every(key => typeof value.profile[key] === "string")) return initialSeekerData;
     if (!value.resumes.every((item: Record<string, unknown>) => item && Object.keys(initialSeekerData.resumes[0]).every(key => typeof item[key] === "string") && ["private", "application"].includes(String(item.visibility)))) return initialSeekerData;
+    if (value.demoVersion !== 1) {
+      return { ...value, demoVersion: 1, resumes: [...value.resumes, ...initialSeekerData.resumes.filter(example => !value.resumes.some((resume: { id: string }) => resume.id === example.id))] };
+    }
     return value;
   } catch { return initialSeekerData; }
 }
