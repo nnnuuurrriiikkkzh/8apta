@@ -38,7 +38,7 @@ export const initialPlatform: Platform = addSeekerDemo({
   notifications: [{ id: "welcome", role: "seeker", title: "Добро пожаловать в демокабинет", text: "Здесь уже есть вымышленные резюме, отклики и переписки. Открой любой раздел и попробуй изменить данные.", href: "/dashboard/seeker", date: "2026-11-05T06:00:00.000Z", read: true }],
   reports: [], history: [], searches: [], supportTickets: initialSupportTickets,
   users: [{ id: "me", name: "Александр Ким", email: "alex.demo@example.com", role: "seeker", blocked: false }, { id: "hr", name: "Елена Соколова", email: "hr@example.com", role: "employer", blocked: false }, { id: "mod", name: "Олег Иванов", email: "moderator@example.com", role: "moderator", blocked: false }, { id: "admin", name: "Анна Пак", email: "admin@example.com", role: "admin", blocked: false }],
-  categories, preferences: { email: true, messages: true, applications: true, profileVisible: false }, settings: { name: "JobHub", support: "support@example.com", moderation: true, registration: true }, subscription: "Free",
+  categories, preferences: { email: true, messages: true, applications: true, profileVisible: false }, settings: { name: "JobHub", support: "support@example.com", moderation: false, registration: true }, subscription: "Free",
 });
 
 export function audit(data: Platform, action: string, actor = "Демонстрация") {
@@ -58,4 +58,17 @@ export function matchesSearch(job: Vacancy, query: string) {
     && ["format", "experience"].every(key => !p.getAll(key).length || p.getAll(key).includes(job[key as "format" | "experience"]))
     && job.min >= (Number(p.get("salary")) || 0)
     && (!Number(p.get("days")) || Date.parse(job.publishedAt) >= Date.now() - Number(p.get("days")) * 86400000);
+}
+
+export function publishVacancy(data: Platform, job: Vacancy) {
+  if (job.status === "Published") return;
+  const now = new Date();
+  job.status = "Published";
+  job.publishedAt = now.toISOString();
+  job.date = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+  data.searches.forEach(search => {
+    if (matchesSearch(job, search.query)) {
+      notify(data, "seeker", "Вакансия по сохранённому поиску", `${search.name}: ${job.title}`, `/jobs/${job.id}`);
+    }
+  });
 }
