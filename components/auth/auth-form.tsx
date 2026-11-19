@@ -7,9 +7,6 @@ import { Icon } from "@/components/icon";
 import { useDemoSession } from "./demo-session";
 import { useSeeker } from "@/components/seeker/store";
 import { usePlatform } from "@/components/platform/store";
-import { CompanyFields } from "@/components/platform/company-fields";
-import { companyErrors, createEmployerCompany, emptyCompanyDetails, type CompanyErrors } from "@/lib/employer-company";
-import { audit, notify } from "@/lib/platform";
 
 type Mode = "login" | "register" | "forgot";
 type FieldName = "name" | "email" | "password" | "confirmation";
@@ -26,9 +23,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const { signIn, registerRole } = useDemoSession();
   const { save: saveSeeker } = useSeeker();
-  const { data: platform, update: updatePlatform } = usePlatform();
-  const [company, setCompany] = useState(emptyCompanyDetails);
-  const [companyIssues, setCompanyIssues] = useState<CompanyErrors>({});
+  const { update: updatePlatform } = usePlatform();
   const [formError, setFormError] = useState("");
   const [values, setValues] = useState<Values>({ name: "", email: "", password: "", confirmation: "" });
   const [errors, setErrors] = useState<Errors>({});
@@ -61,15 +56,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
     if (mode === "register" && !values.confirmation) next.confirmation = "Повтори пароль.";
     else if (mode === "register" && values.password !== values.confirmation) next.confirmation = "Пароли не совпадают.";
     setErrors(next);
-    const issues = mode === "register" && role === "employer" ? companyErrors(company, platform.companies) : {};
-    setCompanyIssues(issues);
     const first = Object.keys(next)[0];
     if (first) {
       (form.current?.elements.namedItem(first) as HTMLInputElement | null)?.focus();
       return;
     }
-    const companyField = Object.keys(issues)[0];
-    if (companyField) { (form.current?.elements.namedItem(`company-${companyField}`) as HTMLInputElement | null)?.focus(); return; }
     setStatus("loading");
     if (mode === "login" || mode === "register") {
       if (mode === "register") {
@@ -77,12 +68,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
         const email = values.email.trim();
         const failure = role === "employer"
           ? updatePlatform(draft => {
-              const registered = createEmployerCompany(draft, company);
               const employer = draft.users.find(user => user.id === "hr");
               if (employer) { employer.name = name; employer.email = email; }
               else draft.users.push({ id: "hr", name, email, role: "employer", blocked: false });
-              audit(draft, `Зарегистрирована компания: ${registered.name}`, name);
-              notify(draft, "moderator", "Новая компания", registered.name, "/moderator/companies");
+              // A new employer registers their company separately; existing companies stay intact.
+              draft.employerCompanyId = null;
             })
           : saveSeeker(current => ({ ...current, profile: { ...current.profile, name, email } }));
         if (failure) { setFormError(failure); setStatus("idle"); return; }
@@ -90,7 +80,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
       }
       else signIn();
       setValues(current => ({ ...current, password: "", confirmation: "" }));
-      router.replace("/");
+      router.replace(mode === "register" && role === "employer" ? "/dashboard/employer/company" : "/");
       return;
     }
     // Только локальная демонстрация ожидания. Никаких сетевых запросов или хранения пароля.
@@ -165,16 +155,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
             </label>)}
         </div>
       </fieldset>}
+      {mode === "register" && role === "employer" && <div className="rounded-xl bg-[#f0f4e8] p-4 text-sm leading-6"><p className="font-semibold">Шаг 1 из 2 · Аккаунт работодателя</p><p className="mt-1 text-muted">Сначала создай аккаунт. На следующем шаге заполнишь сведения о компании, чтобы размещать вакансии.</p></div>}
       {mode === "register" && field("name", "Имя", "Как к тебе обращаться?", "name")}
       {field("email", "Email", "name@example.com", "email")}
       {mode !== "forgot" && field("password", "Пароль", "Не менее 8 символов", mode === "register" ? "new-password" : "current-password")}
       {mode === "register" && field("confirmation", "Повтори пароль", "Ещё раз тот же пароль", "new-password")}
-      {mode === "register" && role === "employer" && <section className="space-y-5 border-t border-line pt-6" aria-labelledby="company-registration-title"><div><h2 id="company-registration-title" className="text-xl font-semibold">Регистрация компании</h2><p className="mt-2 text-sm leading-6 text-muted">Расскажи о своей компании. После регистрации ты сможешь разместить первую вакансию, отправив её на модерацию.</p></div><CompanyFields value={company} onChange={(key, value) => { setCompany(current => ({ ...current, [key]: value })); setCompanyIssues(current => ({ ...current, [key]: undefined })); }} errors={companyIssues} disabled={status === "loading"} /></section>}
       {mode === "login" && <div className="text-right"><Link href="/forgot-password" className="text-sm font-medium underline decoration-[#b8c5a5] underline-offset-4 hover:text-[#648237]">Забыли пароль?</Link></div>}
-      {(Object.values(errors).some(Boolean) || Object.values(companyIssues).some(Boolean)) && <p role="alert" className="text-xs text-[#a4352d]">Проверь отмеченные поля.</p>}
+      {Object.values(errors).some(Boolean) && <p role="alert" className="text-xs text-[#a4352d]">Проверь отмеченные поля.</p>}
       {formError && <p role="alert" className="text-sm text-[#a4352d]">{formError}</p>}
       <button type="submit" disabled={status === "loading"} className="btn btn-primary w-full">
-        {status === "loading" ? "Проверяем форму…" : mode === "register" && role === "employer" ? "Зарегистрировать компанию и аккаунт" : copy.button}<Icon name="arrow" className="size-4" />
+        {status === "loading" ? "Проверяем форму…" : copy.button}<Icon name="arrow" className="size-4" />
       </button>
     </form>
     <div className="mt-6 border-t border-line pt-6 text-center text-sm text-muted">
