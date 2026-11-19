@@ -72,10 +72,15 @@ export function AuthForm({ mode }: { mode: Mode }) {
               if (employer) { employer.name = name; employer.email = email; }
               else draft.users.push({ id: "hr", name, email, role: "employer", blocked: false });
               // A new employer registers their company separately; existing companies stay intact.
+              draft.employerAccountId = crypto.randomUUID();
               draft.employerCompanyId = null;
             })
           : saveSeeker(current => ({ ...current, profile: { ...current.profile, name, email } }));
         if (failure) { setFormError(failure); setStatus("idle"); return; }
+        if (role === "seeker") {
+          const accountFailure = updatePlatform(draft => { draft.seekerAccountId = crypto.randomUUID(); });
+          if (accountFailure) { setFormError(accountFailure); setStatus("idle"); return; }
+        }
         registerRole(role === "employer" ? "employer" : "seeker");
       }
       else signIn();

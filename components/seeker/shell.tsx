@@ -25,6 +25,7 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
     ["/dashboard/seeker/resumes", "Мои резюме", "briefcase"],
     ["/dashboard/seeker/applications", "Мои отклики", "briefcase"],
     ["/dashboard/seeker/favorites", "Избранные вакансии", "bookmark"],
+    ["/dashboard/seeker/team", "Мои команды", "people"],
     ["/messages", "Сообщения", "people"],
     ["/notifications", "Уведомления", "clock"],
     ["/settings", "Настройки", "filter"],

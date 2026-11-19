@@ -26,23 +26,56 @@ export function companyErrors(value: CompanyDetails, companies: Company[] = [], 
   }
   return errors;
 }
-export function employerCompany(data: Platform) {
-  return data.companies.find(company => company.id === data.employerCompanyId);
+export function employerId(data: Platform) { return data.employerAccountId || "hr"; }
+export function companyOwnerId(data: Platform, company: Company) {
+  return company.ownerId || (company.id === data.employerCompanyId ? employerId(data) : undefined);
 }
-export function ownsJob(data: Platform, job?: Vacancy) {
-  const company = employerCompany(data);
+export function accessibleCompanies(data: Platform, actorId = employerId(data)) {
+  return data.companies.filter(company => companyOwnerId(data, company) === actorId || data.companyMembers?.some(member => member.companyId === company.id && member.userId === actorId));
+}
+export function employerCompany(data: Platform, actorId = employerId(data)) {
+  const companies = accessibleCompanies(data, actorId);
+  const selected = data.activeCompanyIds?.[actorId] || (actorId === employerId(data) ? data.employerCompanyId : undefined);
+  return selected ? companies.find(company => company.id === selected) : companies[0];
+}
+export function switchCompany(data: Platform, companyId: string, actorId = employerId(data)) {
+  if (!accessibleCompanies(data, actorId).some(company => company.id === companyId)) throw new CompanyRegistrationError("Нет доступа к этой компании.");
+  data.activeCompanyIds = { ...data.activeCompanyIds, [actorId]: companyId };
+  if (actorId === employerId(data)) data.employerCompanyId = companyId;
+}
+export type CompanyPermission = "profile" | "jobs" | "applications" | "analytics" | "team";
+export function companyRole(data: Platform, actorId = employerId(data), companyId = employerCompany(data, actorId)?.id) {
+  const company = data.companies.find(item => item.id === companyId);
+  if (!company) return null;
+  if (companyOwnerId(data, company) === actorId) return "owner";
+  return data.companyMembers?.find(member => member.companyId === companyId && member.userId === actorId)?.role || null;
+}
+export function canManageCompany(data: Platform, permission: CompanyPermission, actorId = employerId(data), companyId = employerCompany(data, actorId)?.id) {
+  const company = data.companies.find(item => item.id === companyId);
+  if (!company || company.blocked) return false;
+  const role = companyRole(data, actorId, companyId);
+  return role === "owner" || role === "admin" || (role === "moderator" && permission === "jobs") || (role === "recruiter" && ["jobs", "applications", "analytics"].includes(permission));
+}
+export function requireCompanyPermission(data: Platform, permission: CompanyPermission, actorId: string, companyId?: string) {
+  if (!canManageCompany(data, permission, actorId, companyId)) throw new CompanyRegistrationError("Недостаточно прав в этой компании или доступ был изменён.");
+}
+export function ownsJob(data: Platform, job?: Vacancy, actorId = employerId(data)) {
+  const company = employerCompany(data, actorId);
   return Boolean(company && job && (job.companyId ? job.companyId === company.id : job.company === company.name));
 }
-export function employerCanPost(data: Platform) {
-  const company = employerCompany(data);
-  return Boolean(company && !company.blocked && !Object.keys(companyErrors(company)).length);
+export function employerCanPost(data: Platform, actorId = employerId(data)) {
+  const company = employerCompany(data, actorId);
+  return Boolean(company && canManageCompany(data, "jobs", actorId) && !Object.keys(companyErrors(company)).length);
 }
 export function createEmployerCompany(data: Platform, details: CompanyDetails) {
   const input = normalizeCompanyDetails(details);
   const errors = companyErrors(input, data.companies);
   if (Object.keys(errors).length) throw new CompanyRegistrationError(Object.values(errors)[0]);
-  const company: Company = { ...input, id: crypto.randomUUID(), logo: "", verified: false, blocked: false };
+  // Freeze legacy ownership before changing the active company pointer.
+  const legacy = data.companies.find(company => company.id === data.employerCompanyId);
+  if (legacy && !legacy.ownerId) legacy.ownerId = employerId(data);
+  const company: Company = { ...input, id: crypto.randomUUID(), logo: "", verified: false, blocked: false, ownerId: employerId(data), ownerName: data.users?.find(user => user.id === "hr")?.name || "Владелец компании" };
   data.companies.push(company);
-  data.employerCompanyId = company.id;
+  switchCompany(data, company.id);
   return company;
 }

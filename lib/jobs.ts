@@ -15,6 +15,6 @@ export const jobs: Job[] = [
   { id: "content-manager", title: "Контент-менеджер", company: "Поток", letter: "п", color: "#ffe5d2", category: "Маркетинг", city: "Алматы", format: "Удалённо", experience: "Без опыта", employment: "Частичная занятость", min: 150000, max: 250000, tags: ["Тексты", "Соцсети", "Контент"], date: "23 октября 2026", description: "Помогайте Потоку делиться знаниями: создавайте полезный контент о профессиях, обучении и первых шагах в карьере.", tasks: ["Готовить публикации по контент-плану.", "Редактировать материалы экспертов.", "Адаптировать тексты для разных площадок."], requirements: ["Грамотный русский язык.", "Интерес к образованию и цифровым профессиям.", "Примеры текстов или готовность выполнить учебную задачу."] },
 ];
 export const categories = ["Разработка", "Дизайн", "Маркетинг", "Аналитика", "Менеджмент"];
-export const cities = ["Алматы", "Астана", "Шымкент"];
+export { cities } from "./cities";
 export const money = (n: number) => new Intl.NumberFormat("ru-RU").format(n);
 export const salary = (job: Job) => `${money(job.min)} – ${money(job.max)} ₸`;

@@ -2,28 +2,30 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useDemoSession } from "@/components/auth/demo-session";
 import { useRequireSignIn } from "@/components/auth/require-sign-in";
 import { CompanyMark } from "@/components/company-mark";
 import { readAttachment } from "@/components/seeker/store";
 import { companyHref } from "@/lib/company-links";
-import { companyErrors, CompanyRegistrationError, createEmployerCompany, emptyCompanyDetails, employerCompany, normalizeCompanyDetails, type CompanyErrors } from "@/lib/employer-company";
+import { canManageCompany, requireCompanyPermission, companyErrors, CompanyRegistrationError, createEmployerCompany, emptyCompanyDetails, employerCompany, employerId, normalizeCompanyDetails, type CompanyErrors } from "@/lib/employer-company";
 import { audit, notify, type Company } from "@/lib/platform";
 import { CompanyFields } from "./company-fields";
 import { usePlatform } from "./store";
 import { Empty, Field, Heading, Notice, Panel } from "./ui";
 
-export function CompanyProfile() {
-  const { data } = usePlatform();
+export function CompanyProfile({ createNew = false }: { createNew?: boolean }) {
+  const { data , actorId}=usePlatform();
   const { role } = useDemoSession();
-  const company = employerCompany(data);
+  const company = createNew ? undefined : employerCompany(data,actorId);
+  const router = useRouter();
   const [notice, setNotice] = useState("");
-  if (role !== "employer") return <Empty title="Раздел для работодателя" text="Зарегистрируйся как работодатель, чтобы добавить свою компанию." href="/register" label="Регистрация" />;
-  return <><Heading title={company ? "Профиль компании" : "Регистрация компании"} text="Опиши, чем занимается ваша команда. Эти сведения будут доступны кандидатам." action={company && <Link href={companyHref(company.id)} className="btn btn-light">Открыть страницу ↗</Link>} /><Notice>{notice}</Notice>{!company && <p className="mb-6 rounded-xl bg-[#edf3e3] p-4 text-sm leading-6"><span className="mb-2 block font-semibold">Шаг 2 из 2 · Регистрация компании</span>Аккаунт работодателя уже создан. Теперь расскажи о компании — после сохранения профиля можно будет создавать вакансии. Если заполнишь позже, вернись в раздел «Моя компания».</p>}<CompanyProfileForm key={company?.id || data.users.find(user => user.id === "hr")?.email || "new"} company={company} onSaved={setNotice} />{company && !company.blocked && <Link href="/dashboard/employer/jobs/new" className="btn btn-primary mt-6">Создать вакансию →</Link>}</>;
+  if ((!company && role !== "employer") || (company && !canManageCompany(data,"profile",actorId))) return <Empty title="Недостаточно прав" text="Создать компанию может работодатель, а изменить её профиль — владелец или администратор компании." href="/dashboard/employer" label="В кабинет" />;
+  return <><Heading title={company ? "Профиль компании" : createNew ? "Добавить компанию" : "Регистрация компании"} text="Опиши, чем занимается ваша команда. Эти сведения будут доступны кандидатам." action={company && <Link href={companyHref(company.id)} className="btn btn-light">Открыть страницу ↗</Link>} /><Notice>{notice}</Notice>{!company && !createNew && <p className="mb-6 rounded-xl bg-[#edf3e3] p-4 text-sm leading-6"><span className="mb-2 block font-semibold">Шаг 2 из 2 · Регистрация компании</span>Аккаунт работодателя уже создан. Теперь расскажи о компании — после сохранения профиля можно будет создавать вакансии. Если заполнишь позже, вернись в раздел «Моя компания».</p>}<CompanyProfileForm key={company?.id || data.users.find(user => user.id === "hr")?.email || "new"} company={company} onSaved={message => { setNotice(message); if (message && createNew) router.replace("/dashboard/employer/company"); }} />{company && !company.blocked && <Link href="/dashboard/employer/jobs/new" className="btn btn-primary mt-6">Создать вакансию →</Link>}</>;
 }
 
 function CompanyProfileForm({ company, onSaved }: { company?: Company; onSaved: (message: string) => void }) {
-  const { data, update } = usePlatform();
+  const { data, update , actorId}=usePlatform();
   const requireSignIn = useRequireSignIn();
   const initial = company || emptyCompanyDetails(data.users.find(user => user.id === "hr")?.email);
   const [details, setDetails] = useState(initial);
@@ -36,8 +38,10 @@ function CompanyProfileForm({ company, onSaved }: { company?: Company; onSaved: 
     const field = Object.keys(issues)[0];
     if (field) { (event.currentTarget.elements.namedItem(`company-${field}`) as HTMLInputElement | null)?.focus(); return; }
     const failure = update(draft => {
-      const current = employerCompany(draft);
-      if (current?.id !== company?.id) throw new CompanyRegistrationError("Компания изменилась в другой вкладке. Обнови страницу перед сохранением.");
+      const current = company ? employerCompany(draft,actorId) : undefined;
+      if (company && current?.id !== company.id) throw new CompanyRegistrationError("Компания изменилась в другой вкладке. Обнови страницу перед сохранением.");
+      if (company) requireCompanyPermission(draft,"profile",actorId,company.id);
+      else if (actorId !== employerId(draft)) throw new CompanyRegistrationError("Создать компанию может только работодатель.");
       const latestIssues = companyErrors(details, draft.companies, current?.id);
       if (Object.keys(latestIssues).length) throw new CompanyRegistrationError(Object.values(latestIssues)[0]);
       if (current) {
@@ -45,8 +49,8 @@ function CompanyProfileForm({ company, onSaved }: { company?: Company; onSaved: 
         Object.assign(current, normalizeCompanyDetails(details), { logo, verified: false });
         draft.jobs.forEach(job => { if (job.companyId ? job.companyId === current.id : job.company === previous) { job.companyId = current.id; job.company = current.name; job.letter = current.name[0]; } });
       } else { createEmployerCompany(draft, details).logo = logo; }
-      const saved = employerCompany(draft)!;
-      audit(draft, `${current ? "Обновлён профиль" : "Зарегистрирована компания"}: ${saved.name}`, "Работодатель");
+      const saved = employerCompany(draft,actorId)!;
+      audit(draft, `${current ? "Обновлён профиль" : "Зарегистрирована компания"}: ${saved.name}`, "Работодатель", saved.id);
       notify(draft, "moderator", current ? "Профиль компании обновлён" : "Новая компания", saved.name, "/moderator/companies");
     });
     setError(failure || ""); if (!failure) onSaved(company ? "Профиль сохранён. Изменения доступны на странице компании." : "Компания зарегистрирована. Теперь можно создать первую вакансию.");

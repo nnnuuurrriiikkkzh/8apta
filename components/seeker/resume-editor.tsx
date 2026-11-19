@@ -1,4 +1,5 @@
 "use client";
+import { CitySelect } from "@/components/city-select";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import type { Resume } from "@/lib/seeker";
@@ -31,7 +32,7 @@ export function ResumeEditor({ initial, onSave, onCancel }: { initial: Resume; o
       ["title", "Название резюме / должность", "text", true], ["name", "Имя и фамилия", "text", true],
       ["email", "Email", "email", true], ["phone", "Телефон", "tel", false],
       ["city", "Город", "text", true], ["portfolio", "Ссылка на портфолио", "url", false],
-    ] as const).map(([key, label, type, required]) => <label key={key} className="text-sm font-medium">{label}{required ? " *" : ""}<input value={draft[key]} onChange={event => change(key, event.target.value)} type={type} required={required} maxLength={key === "portfolio" ? 500 : 254} className="field mt-2" /></label>)}</div>
+    ] as const).map(([key, label, type, required]) => <label key={key} className="text-sm font-medium">{label}{required ? " *" : ""}{key === "city" ? <CitySelect name="city" value={draft.city} onChange={event => change("city", event.target.value)} required className="field mt-2" /> : <input value={draft[key]} onChange={event => change(key, event.target.value)} type={type} required={required} maxLength={key === "portfolio" ? 500 : 254} className="field mt-2" />}</label>)}</div>
     {([
       ["summary", "О себе", "Коротко о твоих сильных сторонах", 3],
       ["skills", "Навыки", "Например: Figma, React, английский язык", 2],

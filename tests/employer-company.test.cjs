@@ -25,7 +25,7 @@ test('Validation rejects blank descriptions, duplicate names and unsafe website 
 test('Blocked, incomplete and missing companies cannot post; a second registration cannot own earlier jobs',()=>{
  const data=fixture();const company=api.createEmployerCompany(data,details);const job={companyId:company.id,company:company.name};
  company.blocked=true;assert.equal(api.employerCanPost(data),false);company.blocked=false;company.description='short';assert.equal(api.employerCanPost(data),false);company.description=details.description;
- api.createEmployerCompany(data,{...details,name:'Another Team'});assert.equal(api.ownsJob(data,job),false);data.employerCompanyId='missing';assert.equal(api.employerCanPost(data),false);
+ api.createEmployerCompany(data,{...details,name:'Another Team'});assert.equal(api.ownsJob(data,job),false);data.activeCompanyIds.hr='missing';assert.equal(api.employerCanPost(data),false);
 });
 test('Stable company ID keeps ownership after renaming and takes priority over a matching name',()=>{
  const data=fixture();const company=api.createEmployerCompany(data,details);const job={companyId:company.id,company:company.name};company.name='New Studio';

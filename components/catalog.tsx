@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { cities } from "@/lib/cities";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { usePlatform } from "./platform/store";
@@ -17,10 +18,10 @@ export function Catalog() {
 }
 
 function CatalogContents() {
-  const { data } = usePlatform(); const jobs = visibleJobs(data); const categories = data.categories; const cities = Array.from(new Set(jobs.map(j => j.city)));
+  const { data } = usePlatform(); const jobs = visibleJobs(data); const categories = data.categories;
   const params = useSearchParams(); const router = useRouter(); const { ids } = useFavorites(); const [filtersOpen, setFiltersOpen] = useState(true);
   const query = params.get("q") || ""; const city = params.get("city") || ""; const category = params.get("category") || ""; const format = params.getAll("format"); const experience = params.getAll("experience"); const saved = params.get("saved") === "true"; const sort = params.get("sort") || "new"; const min = Math.max(0, Number(params.get("salary")) || 0);
-  const employment = params.get("employment") || ""; const days = params.get("days") || ""; const cutoff = days ? Date.now() - Number(days) * 86400000 : 0;
+  const employment = params.get("employment") || ""; const days = params.get("days") || ""; const [now] = useState(() => Date.now()); const cutoff = days ? now - Number(days) * 86400000 : 0;
   function update(key: string, value: string, multiple = false) { const next = new URLSearchParams(params.toString()); if (multiple) { const values = next.getAll(key); next.delete(key); (values.includes(value) ? values.filter(v => v !== value) : [...values, value]).forEach(v => next.append(key, v)); } else { if (value) next.set(key, value); else next.delete(key); } if (key !== "page") next.delete("page"); router.push(`/jobs?${next.toString()}`, { scroll: false }); }
   const filtered = jobs.filter(job => `${job.title} ${job.company} ${job.category} ${job.tags.join(" ")}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")) && (!city || job.city === city) && (!category || job.category === category) && (!format.length || format.includes(job.format)) && (!experience.length || experience.includes(job.experience)) && (!employment || job.employment === employment) && (!days || new Date(job.publishedAt).getTime() >= cutoff) && job.min >= min && (!saved || ids.includes(job.id)));
   if (sort === "salary") filtered.sort((a,b) => b.max - a.max); else filtered.sort((a,b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));

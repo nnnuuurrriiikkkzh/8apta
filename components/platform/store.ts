@@ -6,6 +6,7 @@ import { createCachedBrowserStore } from "@/lib/cached-browser-store";
 import type { Role } from "@/lib/platform";
 import { initialSupportTickets } from "@/lib/support";
 import { CompanyRegistrationError } from "@/lib/employer-company";
+import { useDemoSession } from "@/components/auth/demo-session";
 
 const key = "jobhub-platform-v1";
 const seed = JSON.stringify(initialPlatform);
@@ -23,7 +24,9 @@ function parse(raw: string): Platform {
   try {
     const value = JSON.parse(raw);
     if (value?.version !== 1 || !["jobs", "companies", "applications", "messages", "notifications", "reports", "history", "users", "categories"].every(k => Array.isArray(value[k])) || !value.preferences || !value.settings) return initialPlatform;
-    return addSeekerDemo({ ...value, searches: Array.isArray(value.searches) ? value.searches : [], supportTickets: Array.isArray(value.supportTickets) ? value.supportTickets : initialSupportTickets });
+    const legacy = value.companies.find((company: Platform["companies"][number]) => company.id === value.employerCompanyId);
+    if (legacy && !legacy.ownerId) { legacy.ownerId = value.employerAccountId || "hr"; legacy.ownerName = value.users.find((user: Platform["users"][number]) => user.id === "hr")?.name; }
+    return addSeekerDemo({ ...value, companyMembers: Array.isArray(value.companyMembers) ? value.companyMembers : [], teamRequests: Array.isArray(value.teamRequests) ? value.teamRequests : [], activeCompanyIds: value.activeCompanyIds || {}, searches: Array.isArray(value.searches) ? value.searches : [], supportTickets: Array.isArray(value.supportTickets) ? value.supportTickets : initialSupportTickets });
   } catch { return initialPlatform; }
 }
 const store = createCachedBrowserStore({ read: snapshot, parse, initial: initialPlatform, keys: [key, "jobhub-demo-application-statuses"] });
@@ -37,9 +40,11 @@ function update(change: (draft: Platform) => void): string | null {
     } catch (error) { return error instanceof CompanyRegistrationError ? error.message : "Не удалось сохранить изменения. Проверь свободное место и доступ к хранилищу браузера."; }
 }
 export function usePlatform() {
+  const { role } = useDemoSession();
   const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
   const ready = useSyncExternalStore(store.subscribe, () => true, () => false);
-  return { data, ready, update };
+  const actorId = role === "employer" ? data.employerAccountId || "hr" : role === "seeker" ? data.seekerAccountId || "me" : role;
+  return { data, ready, update, actorId };
 }
 
 export function useUnreadNotifications(role: Role) {

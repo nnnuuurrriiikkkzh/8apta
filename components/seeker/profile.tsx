@@ -1,4 +1,5 @@
 "use client";
+import { CitySelect } from "@/components/city-select";
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Avatar } from "./shell";
@@ -47,7 +48,7 @@ export function ProfilePage() {
           ["email", "Email", "email", "email", true],
           ["phone", "Телефон", "tel", "tel", false],
           ["city", "Город", "text", "address-level2", false],
-        ] as const).map(([key, label, type, autoComplete, required]) => <label key={key} className="text-sm font-medium">{label}{required && <span className="text-muted"> *</span>}<input name={key} value={draft[key]} onChange={event => change(key, event.target.value)} type={type} autoComplete={autoComplete} required={required} maxLength={key === "email" ? 254 : 100} className="field mt-2" /></label>)}
+        ] as const).map(([key, label, type, autoComplete, required]) => <label key={key} className="text-sm font-medium">{label}{required && <span className="text-muted"> *</span>}{key === "city" ? <CitySelect name={key} value={draft.city} onChange={event => change("city", event.target.value)} className="field mt-2" /> : <input name={key} value={draft[key]} onChange={event => change(key, event.target.value)} type={type} autoComplete={autoComplete} required={required} maxLength={key === "email" ? 254 : 100} className="field mt-2" />}</label>)}
       </div>
       <label className="mt-5 block text-sm font-medium">О себе<textarea value={draft.bio} onChange={event => change("bio", event.target.value)} rows={5} maxLength={1500} placeholder="Чем ты занимаешься и какую работу ищешь?" className="field mt-2 resize-y" /></label><p className="mt-1 text-right text-xs text-muted">{draft.bio.length} / 1500</p>
       {error && <p role="alert" className="mt-4 rounded-lg bg-[#fcece9] p-3 text-sm text-[#a4352d]">{error}</p>}

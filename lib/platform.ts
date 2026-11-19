@@ -3,11 +3,12 @@ import { applications, type Application } from "./applications";
 import type { Resume } from "./seeker";
 import { addSeekerDemo } from "./seeker-demo";
 import { initialSupportTickets, type SupportTicket } from "./support";
+import type { CompanyMember, TeamRequest } from "./company-team";
 
 export const jobStatuses = { Draft: "Черновик", Pending: "На проверке", Published: "Опубликована", Rejected: "Отклонена", Closed: "Закрыта", Archived: "В архиве" } as const;
 export type JobStatus = keyof typeof jobStatuses;
 export type Vacancy = Job & { companyId?: string; status: JobStatus; publishedAt: string; reason: string; conditions: string };
-export type Company = { id: string; name: string; city: string; industry: string; size: string; website: string; description: string; email: string; logo: string; verified: boolean; blocked: boolean };
+export type Company = { id: string; name: string; city: string; industry: string; size: string; website: string; description: string; email: string; logo: string; verified: boolean; blocked: boolean; ownerId?: string; ownerName?: string };
 export type Response = Application & { mine?: boolean; resume?: Resume };
 export type Role = "seeker" | "employer" | "moderator" | "admin";
 export const roleLabels: Record<Role, string> = { seeker: "Соискатель", employer: "Работодатель", moderator: "Модератор", admin: "Администратор" };
@@ -17,8 +18,8 @@ export const reportStatuses = { Open: "Новая", InReview: "В работе",
 export type Platform = {
   version: 1; seekerDemoVersion?: 1; jobs: Vacancy[]; companies: Company[]; applications: Response[];
   messages: { id: string; applicationId: string; author: "seeker" | "employer"; text: string; date: string; read: boolean }[];
-  notifications: { id: string; role: Role; title: string; text: string; href: string; date: string; read: boolean }[];
-  reports: Report[]; history: { id: string; action: string; date: string; actor: string }[];
+  notifications: { id: string; role: Role; title: string; text: string; href: string; date: string; read: boolean; companyId?: string; recipientId?: string }[];
+  reports: Report[]; history: { id: string; action: string; date: string; actor: string; companyId?: string }[];
   users: { id: string; name: string; email: string; role: Role; blocked: boolean }[];
   categories: string[];
   preferences: { email: boolean; messages: boolean; applications: boolean; profileVisible: boolean };
@@ -27,6 +28,11 @@ export type Platform = {
   searches: { id: string; name: string; query: string }[];
   supportTickets: SupportTicket[];
   employerCompanyId?: string | null;
+  employerAccountId?: string;
+  seekerAccountId?: string;
+  activeCompanyIds?: Record<string, string>;
+  companyMembers?: CompanyMember[];
+  teamRequests?: TeamRequest[];
 };
 
 export const initialPlatform: Platform = addSeekerDemo({
@@ -41,11 +47,11 @@ export const initialPlatform: Platform = addSeekerDemo({
   categories, preferences: { email: true, messages: true, applications: true, profileVisible: false }, settings: { name: "JobHub", support: "support@example.com", moderation: false, registration: true }, subscription: "Free",
 });
 
-export function audit(data: Platform, action: string, actor = "Демонстрация") {
-  data.history.unshift({ id: crypto.randomUUID(), action, actor, date: new Date().toISOString() });
+export function audit(data: Platform, action: string, actor = "Демонстрация", companyId?: string) {
+  data.history.unshift({ id: crypto.randomUUID(), action, actor, date: new Date().toISOString(), companyId });
 }
-export function notify(data: Platform, role: Role, title: string, text: string, href: string) {
-  data.notifications.unshift({ id: crypto.randomUUID(), role, title, text, href, date: new Date().toISOString(), read: false });
+export function notify(data: Platform, role: Role, title: string, text: string, href: string, scope: { companyId?: string; recipientId?: string } = {}) {
+  data.notifications.unshift({ id: crypto.randomUUID(), role, title, text, href, date: new Date().toISOString(), read: false, ...scope });
 }
 export function visibleJobs(data: Platform) { return data.jobs.filter(job => job.status === "Published" && !data.companies.find(c => c.name === job.company)?.blocked); }
 export function dateLabel(date: string) { return new Date(date).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" }); }
