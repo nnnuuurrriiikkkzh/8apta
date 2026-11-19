@@ -2,7 +2,6 @@ import { initialSeekerData } from "./seeker";
 import type { Platform, Response } from "./platform";
 
 // Stable IDs let existing browsers receive these examples once without duplicating user records.
-export const demoFavoriteIds = ["product-designer", "frontend-developer", "data-analyst"];
 const scenarios = [
   { id: "seeker-demo-design", jobId: "product-designer", resume: 0, status: "Interview", date: "2026-11-02T09:00:00.000Z", letter: "Здравствуйте! Мне близки ваши задачи в финтехе. В портфолио есть личный кабинет и дизайн-система. Буду рад обсудить продукт." },
   { id: "seeker-demo-frontend", jobId: "frontend-developer", resume: 1, status: "Viewed", date: "2026-11-03T08:00:00.000Z", letter: "Хочу присоединиться к команде Орбиты. Работаю с React и TypeScript, уделяю внимание адаптивности и доступности интерфейсов." },

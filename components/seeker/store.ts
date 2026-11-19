@@ -2,16 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { initialSeekerData, type SeekerData } from "@/lib/seeker";
+import { createCachedBrowserStore } from "@/lib/cached-browser-store";
 
 const key = "jobhub-seeker-v1";
 const seed = JSON.stringify(initialSeekerData);
-const listeners = new Set<() => void>();
 function snapshot() { try { return localStorage.getItem(key) || seed; } catch { return seed; } }
-function subscribe(callback: () => void) {
-  listeners.add(callback);
-  window.addEventListener("storage", callback);
-  return () => { listeners.delete(callback); window.removeEventListener("storage", callback); };
-}
 function parse(raw: string): SeekerData {
   try {
     const value = JSON.parse(raw);
@@ -25,19 +20,19 @@ function parse(raw: string): SeekerData {
   } catch { return initialSeekerData; }
 }
 
-export function useSeeker() {
-  const raw = useSyncExternalStore(subscribe, snapshot, () => seed);
-  const ready = useSyncExternalStore(subscribe, () => true, () => false);
-  const data = parse(raw);
-  function save(change: (current: SeekerData) => SeekerData): string | null {
+const store = createCachedBrowserStore({ read: snapshot, parse, initial: initialSeekerData, keys: [key] });
+function save(change: (current: SeekerData) => SeekerData): string | null {
     try {
-      localStorage.setItem(key, JSON.stringify(change(parse(snapshot()))));
-      listeners.forEach(callback => callback());
+      localStorage.setItem(key, JSON.stringify(change(store.getFreshSnapshot())));
+      store.refresh();
       return null;
     } catch {
       return "Не удалось сохранить изменения. Проверь доступ к хранилищу браузера или уменьши размер вложений.";
     }
-  }
+}
+export function useSeeker() {
+  const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const ready = useSyncExternalStore(store.subscribe, () => true, () => false);
   return { data, ready, save };
 }
 

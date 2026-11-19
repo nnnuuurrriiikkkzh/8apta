@@ -14,6 +14,10 @@ function snapshot() {
   try { return localStorage.getItem(key) || ""; } catch { return ""; }
 }
 
+export function isDemoSignedIn() {
+  return ["active", "seeker", "employer", "moderator", "admin"].includes(snapshot());
+}
+
 function subscribe(callback: () => void) {
   listeners.add(callback);
   function onStorage(event: StorageEvent) {
@@ -37,6 +41,7 @@ function setSignedIn(active: boolean, role: Role = "seeker") {
 
 export function useDemoSession() {
   const value = useSyncExternalStore(subscribe, snapshot, () => "");
+  const ready = useSyncExternalStore(subscribe, () => true, () => false);
   const role: Role = ["employer", "moderator", "admin"].includes(value) ? value as Role : "seeker";
   function signIn(selectedRole?: Role) {
     let next = selectedRole;
@@ -47,5 +52,5 @@ export function useDemoSession() {
     try { localStorage.setItem(accountRoleKey, next); } catch { /* UI role still works for this visit. */ }
     setSignedIn(true, next);
   }
-  return { signedIn: Boolean(value), role, home: roleHomes[role], signIn, registerRole, signOut: () => setSignedIn(false) };
+  return { signedIn: ["active", "seeker", "employer", "moderator", "admin"].includes(value), ready, role, home: roleHomes[role], signIn, registerRole, signOut: () => setSignedIn(false) };
 }

@@ -1,16 +1,17 @@
 "use client";
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { createContext, useContext, useCallback, useMemo, useSyncExternalStore } from "react";
 import { Icon } from "./icon";
-import { demoFavoriteIds } from "@/lib/seeker-demo";
+import { demoFavoriteIds } from "@/lib/favorite-seed";
+import { createCachedBrowserStore } from "@/lib/cached-browser-store";
+import { useRequireSignIn } from "./auth/require-sign-in";
+import { useDemoSession } from "./auth/demo-session";
+const emptyIds: string[] = [];
 const key = "jobhub-favorites";
 const seed = JSON.stringify({ version: 1, ids: demoFavoriteIds });
 let memory: string | null = null;
-const listeners = new Set<() => void>();
 function snapshot() { if (memory !== null) return memory; try { return localStorage.getItem(key) || seed; } catch { return seed; } }
-function subscribe(callback: () => void) { listeners.add(callback); window.addEventListener("storage", callback); return () => { listeners.delete(callback); window.removeEventListener("storage", callback); }; }
 const Context = createContext<{ ids: string[]; toggle: (id: string) => void }>({ ids: [], toggle: () => {} });
-export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const raw = useSyncExternalStore(subscribe, snapshot, () => seed);
+function parse(raw: string): string[] {
   let ids: string[] = [];
   try {
     const parsed = JSON.parse(raw);
@@ -18,13 +19,24 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     else if (parsed?.version === 1 && Array.isArray(parsed.ids)) ids = parsed.ids.filter((id: unknown): id is string => typeof id === "string");
     else ids = demoFavoriteIds;
   } catch { ids = demoFavoriteIds; }
-  function toggle(id: string) {
+  return ids;
+}
+const store = createCachedBrowserStore({ read: snapshot, parse, initial: demoFavoriteIds, keys: [key] });
+function toggleStored(id: string) {
+    const ids = store.getFreshSnapshot();
     const next = ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id];
     const value = JSON.stringify({ version: 1, ids: next });
     try { localStorage.setItem(key, value); memory = null; } catch { memory = value; }
-    listeners.forEach((callback) => callback());
+    store.refresh();
   }
-  return <Context.Provider value={{ ids, toggle }}>{children}</Context.Provider>;
+export function FavoritesProvider({ children }: { children: React.ReactNode }) {
+  const storedIds = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const { signedIn } = useDemoSession();
+  const requireSignIn = useRequireSignIn();
+  const ids = signedIn ? storedIds : emptyIds;
+  const toggle = useCallback((id: string) => { if (requireSignIn()) toggleStored(id); }, [requireSignIn]);
+  const value = useMemo(() => ({ ids, toggle }), [ids, toggle]);
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useFavorites = () => useContext(Context);
 export function SaveButton({ id, label = false }: { id: string; label?: boolean }) {

@@ -8,9 +8,15 @@ import { Icon } from "./icon";
 import { JobCard } from "./job-card";
 import { SavedSearches } from "./platform/saved-searches";
 import { SearchForm } from "./search-form";
+import { RequireSignIn } from "./auth/require-sign-in";
 import { useFavorites } from "./favorites";
 
 export function Catalog() {
+  const params = useSearchParams();
+  return params.get("saved") === "true" ? <RequireSignIn><CatalogContents /></RequireSignIn> : <CatalogContents />;
+}
+
+function CatalogContents() {
   const { data } = usePlatform(); const jobs = visibleJobs(data); const categories = data.categories; const cities = Array.from(new Set(jobs.map(j => j.city)));
   const params = useSearchParams(); const router = useRouter(); const { ids } = useFavorites(); const [filtersOpen, setFiltersOpen] = useState(true);
   const query = params.get("q") || ""; const city = params.get("city") || ""; const category = params.get("category") || ""; const format = params.getAll("format"); const experience = params.getAll("experience"); const saved = params.get("saved") === "true"; const sort = params.get("sort") || "new"; const min = Math.max(0, Number(params.get("salary")) || 0);

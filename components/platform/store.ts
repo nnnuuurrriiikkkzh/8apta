@@ -1,11 +1,14 @@
 "use client";
-import { useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { initialPlatform, type Platform } from "@/lib/platform";
 import { addSeekerDemo } from "@/lib/seeker-demo";
+import { createCachedBrowserStore } from "@/lib/cached-browser-store";
+import type { Role } from "@/lib/platform";
+import { initialSupportTickets } from "@/lib/support";
+import { CompanyRegistrationError } from "@/lib/employer-company";
 
 const key = "jobhub-platform-v1";
 const seed = JSON.stringify(initialPlatform);
-const listeners = new Set<() => void>();
 function snapshot() {
   try {
     const current = localStorage.getItem(key);
@@ -16,26 +19,30 @@ function snapshot() {
     return JSON.stringify({ ...initialPlatform, applications: initialPlatform.applications.map(a => ({ ...a, status: ["Submitted", "Viewed", "Interview", "Accepted", "Rejected", "Withdrawn"].includes(statuses?.[a.id]) ? statuses[a.id] : a.status })) });
   } catch { return seed; }
 }
-function subscribe(cb: () => void) { listeners.add(cb); window.addEventListener("storage", cb); return () => { listeners.delete(cb); window.removeEventListener("storage", cb); }; }
 function parse(raw: string): Platform {
   try {
     const value = JSON.parse(raw);
     if (value?.version !== 1 || !["jobs", "companies", "applications", "messages", "notifications", "reports", "history", "users", "categories"].every(k => Array.isArray(value[k])) || !value.preferences || !value.settings) return initialPlatform;
-    return addSeekerDemo({ ...value, searches: Array.isArray(value.searches) ? value.searches : [] });
+    return addSeekerDemo({ ...value, searches: Array.isArray(value.searches) ? value.searches : [], supportTickets: Array.isArray(value.supportTickets) ? value.supportTickets : initialSupportTickets });
   } catch { return initialPlatform; }
 }
-export function usePlatform() {
-  const raw = useSyncExternalStore(subscribe, snapshot, () => seed);
-  const data = useMemo(() => parse(raw), [raw]);
-  const ready = useSyncExternalStore(subscribe, () => true, () => false);
-  function update(change: (draft: Platform) => void): string | null {
+const store = createCachedBrowserStore({ read: snapshot, parse, initial: initialPlatform, keys: [key, "jobhub-demo-application-statuses"] });
+function update(change: (draft: Platform) => void): string | null {
     try {
-      const draft = structuredClone(parse(snapshot()));
+      const draft = structuredClone(store.getFreshSnapshot());
       change(draft);
       localStorage.setItem(key, JSON.stringify(draft));
-      listeners.forEach(cb => cb());
+      store.refresh();
       return null;
-    } catch { return "Не удалось сохранить изменения. Проверь свободное место и доступ к хранилищу браузера."; }
-  }
+    } catch (error) { return error instanceof CompanyRegistrationError ? error.message : "Не удалось сохранить изменения. Проверь свободное место и доступ к хранилищу браузера."; }
+}
+export function usePlatform() {
+  const data = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const ready = useSyncExternalStore(store.subscribe, () => true, () => false);
   return { data, ready, update };
+}
+
+export function useUnreadNotifications(role: Role) {
+  const count = (data: Platform) => data.notifications.filter(n => n.role === role && !n.read).length;
+  return useSyncExternalStore(store.subscribe, () => count(store.getSnapshot()), () => count(initialPlatform));
 }

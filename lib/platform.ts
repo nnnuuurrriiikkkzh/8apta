@@ -2,10 +2,11 @@ import { jobs, categories, type Job } from "./jobs";
 import { applications, type Application } from "./applications";
 import type { Resume } from "./seeker";
 import { addSeekerDemo } from "./seeker-demo";
+import { initialSupportTickets, type SupportTicket } from "./support";
 
 export const jobStatuses = { Draft: "Черновик", Pending: "На проверке", Published: "Опубликована", Rejected: "Отклонена", Closed: "Закрыта", Archived: "В архиве" } as const;
 export type JobStatus = keyof typeof jobStatuses;
-export type Vacancy = Job & { status: JobStatus; publishedAt: string; reason: string; conditions: string };
+export type Vacancy = Job & { companyId?: string; status: JobStatus; publishedAt: string; reason: string; conditions: string };
 export type Company = { id: string; name: string; city: string; industry: string; size: string; website: string; description: string; email: string; logo: string; verified: boolean; blocked: boolean };
 export type Response = Application & { mine?: boolean; resume?: Resume };
 export type Role = "seeker" | "employer" | "moderator" | "admin";
@@ -24,6 +25,8 @@ export type Platform = {
   settings: { name: string; support: string; moderation: boolean; registration: boolean };
   subscription: "Free" | "Premium";
   searches: { id: string; name: string; query: string }[];
+  supportTickets: SupportTicket[];
+  employerCompanyId?: string | null;
 };
 
 export const initialPlatform: Platform = addSeekerDemo({
@@ -33,7 +36,7 @@ export const initialPlatform: Platform = addSeekerDemo({
   applications,
   messages: [{ id: "msg-demo", applicationId: "demo-3", author: "employer", text: "Мария, здравствуйте! Приглашаем вас обсудить вакансию. Когда вам будет удобно?", date: "2026-10-28T10:30:00.000Z", read: false }],
   notifications: [{ id: "welcome", role: "seeker", title: "Добро пожаловать в демокабинет", text: "Здесь уже есть вымышленные резюме, отклики и переписки. Открой любой раздел и попробуй изменить данные.", href: "/dashboard/seeker", date: "2026-11-05T06:00:00.000Z", read: true }],
-  reports: [], history: [], searches: [],
+  reports: [], history: [], searches: [], supportTickets: initialSupportTickets,
   users: [{ id: "me", name: "Александр Ким", email: "alex.demo@example.com", role: "seeker", blocked: false }, { id: "hr", name: "Елена Соколова", email: "hr@example.com", role: "employer", blocked: false }, { id: "mod", name: "Олег Иванов", email: "moderator@example.com", role: "moderator", blocked: false }, { id: "admin", name: "Анна Пак", email: "admin@example.com", role: "admin", blocked: false }],
   categories, preferences: { email: true, messages: true, applications: true, profileVisible: false }, settings: { name: "JobHub", support: "support@example.com", moderation: true, registration: true }, subscription: "Free",
 });

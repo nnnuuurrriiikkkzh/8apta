@@ -28,6 +28,7 @@ export function SeekerShell({ children }: { children: React.ReactNode }) {
     ["/messages", "Сообщения", "people"],
     ["/notifications", "Уведомления", "clock"],
     ["/settings", "Настройки", "filter"],
+    ["/support", "Служба поддержки", "people"],
     ["/jobs", "Найти работу", "search"],
   ];
   return <main id="main" className="shell py-8 sm:py-10">
